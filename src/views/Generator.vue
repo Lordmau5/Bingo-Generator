@@ -207,7 +207,21 @@ export default {
   mounted() {
     this.items = [];
     let id = 0;
-    games.forEach(game => {
+
+    let lsGames = localStorage.getItem("games_list");
+    if (lsGames) {
+      try {
+        lsGames = JSON.parse(lsGames);
+      } catch {
+        lsGames = false;
+      }
+    }
+
+    if (!lsGames) {
+      lsGames = games;
+    }
+
+    lsGames.forEach(game => {
       const game_o = {
         id: id++,
         name: game.game_name,
