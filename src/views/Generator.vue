@@ -129,13 +129,22 @@ export default {
   }),
   methods: {
     clickGenerate() {
-      const shuffled = _.take(_.shuffle(this.enabled), 25);
+      const shuffled = _.shuffle(this.enabled);
 
       const objectives = [];
+      const categories = [];
       shuffled.forEach(id => {
-        objectives.push({
-          name: this.idToObjective[id]
-        });
+        if (objectives.length < 25) {
+          const obj = this.idToObjective[id];
+
+          if (!categories.includes(obj.category)) {
+            objectives.push({
+              name: obj.title
+            });
+
+            categories.push(obj.category);
+          }
+        }
       });
 
       if (this.checkbox_freebie) {
@@ -251,7 +260,10 @@ export default {
           };
 
           group.options.forEach(option => {
-            this.idToObjective[id] = option.title;
+            this.idToObjective[id] = {
+              title: option.title,
+              category: group.group_name
+            };
 
             const option_o = {
               id: id++,
