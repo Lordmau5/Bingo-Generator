@@ -42,6 +42,9 @@
                   v-on:change="onCheckboxHard"
                 ></v-checkbox>
               </v-col>
+              <v-col>
+                <v-checkbox v-model="checkbox_freebie" label="Freebie" color="blue"></v-checkbox>
+              </v-col>
             </v-row>
           </v-col>
         </v-row>
@@ -119,6 +122,7 @@ export default {
     checkbox_easy: false,
     checkbox_normal: false,
     checkbox_hard: false,
+    checkbox_freebie: false,
     dialog: false,
     generated_text: "",
     clipboard_snackbar: false
@@ -133,6 +137,10 @@ export default {
           name: this.idToObjective[id]
         });
       });
+
+      if (this.checkbox_freebie) {
+        objectives[12].name = "FREE";
+      }
 
       this.generated_text = JSON.stringify(objectives);
       this.dialog = true;
