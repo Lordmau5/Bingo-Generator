@@ -9,7 +9,7 @@
         </v-list-item-content>
 
         <v-list-item-avatar tile size="120">
-          <v-img :src="require(`@/assets/${game.icon}`)"></v-img>
+          <v-img :src="game.icon"></v-img>
         </v-list-item-avatar>
       </v-list-item>
 
@@ -20,6 +20,17 @@
   </div>
   <div v-else>
     <v-row>
+      <v-col cols="12">
+        <div>
+          <span class="title">Icon</span>
+        </div>
+        <v-list-item-avatar tile size="120">
+          <v-img :src="edit_game.icon"></v-img>
+        </v-list-item-avatar>
+        <v-text-field label="Icon URL" v-model="input_icon_url"></v-text-field>
+        <v-btn class="ma-2" color="green" @click="updateIconURL">Update</v-btn>
+      </v-col>
+
       <v-col cols="12">
         <div v-show="!add_category && !edit_category">
           <v-select
@@ -340,6 +351,8 @@ export default {
     edit_group: false,
     edit_option: false,
 
+    input_icon_url: "",
+
     add_category: false,
     input_category: "",
     add_group: false,
@@ -352,7 +365,7 @@ export default {
   computed: {
     edit_game() {
       if (this.editing) {
-        const game = this.games.find(g => g.game_name === this.editing);
+        const game = this.findGameByName(this.editing);
         return game;
       }
 
@@ -593,8 +606,23 @@ export default {
       localStorage.setItem("games_list", JSON.stringify(this.games));
     },
 
-    editGame(game) {
-      this.editing = game;
+    editGame(name) {
+      this.editing = name;
+
+      const game = this.findGameByName(name);
+      if (game) {
+        this.input_icon_url = game.icon;
+      }
+    },
+
+    findGameByName(name) {
+      return this.games.find(g => g.game_name === name);
+    },
+
+    updateIconURL() {
+      this.edit_game.icon = this.input_icon_url.trim();
+
+      this.updateGames();
     }
   },
   created() {
