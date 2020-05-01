@@ -23,41 +23,64 @@
                   Settings
                 </v-expansion-panel-header>
                 <v-expansion-panel-content>
-                  <v-row justify="start">
-                    <v-col cols="1">
-                      <v-checkbox
-                        v-model="checkbox_easy"
-                        label="Easy"
-                        :color="getDifficultyColor('Easy')"
-                        v-on:change="onCheckboxEasy"
-                      ></v-checkbox>
-                    </v-col>
-                    <v-col cols="1">
-                      <v-checkbox
-                        v-model="checkbox_normal"
-                        label="Normal"
-                        :color="getDifficultyColor('Normal')"
-                        v-on:change="onCheckboxNormal"
-                      ></v-checkbox>
-                    </v-col>
-                    <v-col cols="1">
-                      <v-checkbox
-                        v-model="checkbox_hard"
-                        label="Hard"
-                        :color="getDifficultyColor('Hard')"
-                        v-on:change="onCheckboxHard"
-                      ></v-checkbox>
-                    </v-col>
-                  </v-row>
-                  <v-row justify="start">
-                    <v-col class="py-0 my-0">
-                      <v-radio-group class="py-0 my-0" v-model="radio_freebie">
-                        <v-radio :value="0" label="Freebie: Off" color="blue"></v-radio>
-                        <v-radio :value="1" label="Freebie: Center" color="blue"></v-radio>
-                        <v-radio :value="2" label="Freebie: Random" color="blue"></v-radio>
-                      </v-radio-group>
-                    </v-col>
-                  </v-row>
+                  <v-layout row wrap align-start justify-start>
+                    <v-flex xs12 lg4>
+                      <v-row>
+                        <v-col class="py-0 my-0">
+                          <v-checkbox
+                            class="py-0 my-0"
+                            v-model="checkbox_easy"
+                            label="Easy"
+                            :color="getDifficultyColor('Easy')"
+                            v-on:change="onCheckboxEasy"
+                          ></v-checkbox>
+                          <v-checkbox
+                            class="py-0 my-0"
+                            v-model="checkbox_normal"
+                            label="Normal"
+                            :color="getDifficultyColor('Normal')"
+                            v-on:change="onCheckboxNormal"
+                          ></v-checkbox>
+                          <v-checkbox
+                            class="py-0 my-0"
+                            v-model="checkbox_hard"
+                            label="Hard"
+                            :color="getDifficultyColor('Hard')"
+                            v-on:change="onCheckboxHard"
+                          ></v-checkbox>
+                        </v-col>
+                      </v-row>
+                    </v-flex>
+                    <v-flex xs12 lg4>
+                      <v-row>
+                        <v-col class="py-0 my-0">
+                          <v-radio-group class="py-0 my-0" v-model="settings.freebie">
+                            <v-radio :value="0" label="Freebie: Off" color="blue"></v-radio>
+                            <v-radio :value="1" label="Freebie: Center" color="blue"></v-radio>
+                            <v-radio :value="2" label="Freebie: Random" color="blue"></v-radio>
+                          </v-radio-group>
+                        </v-col>
+                      </v-row>
+                    </v-flex>
+                    <v-flex xs12 lg4>
+                      <v-row>
+                        <v-col class="py-0 my-0">
+                          <v-checkbox
+                            class="py-0 my-0"
+                            v-model="settings.unique_categories"
+                            label="Unique Categories"
+                            color="purple"
+                          ></v-checkbox>
+                          <v-checkbox
+                            class="py-0 my-0"
+                            v-model="settings.unique_groups"
+                            label="Unique Groups"
+                            color="purple"
+                          ></v-checkbox>
+                        </v-col>
+                      </v-row>
+                    </v-flex>
+                  </v-layout>
                 </v-expansion-panel-content>
               </v-expansion-panel>
             </v-expansion-panels>
@@ -104,7 +127,10 @@
         <v-card-title class="headline">Generated Bingo Objectives!</v-card-title>
 
         <v-card-text>
-          <code>{{ generated_text }}</code>
+          <code style="filter: blur(4px);">{{ generated_text }}</code>
+          <div>
+            <span><strong>Generated after:</strong> {{ generated_after }} attempts</span>
+          </div>
         </v-card-text>
 
         <v-card-actions>
@@ -138,45 +164,86 @@ export default {
     items: [],
     idToObjective: {},
     enabled: [],
-    search: null,
+    search: "",
+    settings: {
+      freebie: 0,
+      unique_categories: false,
+      unique_groups: false
+    },
     checkbox_easy: false,
     checkbox_normal: false,
     checkbox_hard: false,
-    radio_freebie: 0,
     dialog: false,
     generated_text: "",
-    clipboard_snackbar: false
+    generated_after: 0,
+    clipboard_snackbar: false,
+    settings_panel: false
   }),
+  watch: {
+    settings: {
+      deep: true,
+      handler() {
+        localStorage.setItem("generator_settings", JSON.stringify(this.settings));
+      }
+    }
+  },
   methods: {
     clickGenerate() {
       const shuffled = _.shuffle(this.enabled);
 
       const objectives = [];
-      const categories = [];
-      shuffled.forEach(id => {
-        if (objectives.length < 25) {
-          const obj = this.idToObjective[id];
 
-          if (!categories.includes(obj.category)) {
+      const category_size = _.uniq(_.map(this.enabled, id => this.idToObjective[id].category))
+        .length;
+      const group_size = _.uniq(_.map(this.enabled, id => this.idToObjective[id].group)).length;
+
+      let groups = [];
+      let categories = [];
+      let attempts = 0;
+      let shuffleID = 0;
+      while (objectives.length < 25 && attempts < 5000) {
+        const obj = this.idToObjective[shuffled[shuffleID]];
+
+        if (categories.length === category_size) {
+          categories = [];
+        }
+
+        if (!categories.includes(obj.category)) {
+          if (groups.length === group_size) {
+            groups = [];
+          }
+
+          if (!groups.includes(obj.group)) {
             objectives.push({
               name: obj.title
             });
+          }
 
-            categories.push(obj.category);
+          if (this.settings.unique_groups) {
+            groups.push(obj.group);
           }
         }
-      });
+        if (this.settings.unique_categories) {
+          categories.push(obj.category);
+        }
+
+        if (++shuffleID >= shuffled.length) {
+          shuffleID = 0;
+        }
+        attempts++;
+      }
 
       // Center Freebie
-      if (this.radio_freebie === 1) {
+      if (this.settings.freebie === 1) {
         objectives[12].name = "FREE";
       }
       // Random Freebie
-      else if (this.radio_freebie === 2) {
+      else if (this.settings.freebie === 2) {
         objectives[Math.floor(Math.random() * 25)].name = "FREE";
       }
 
       this.generated_text = JSON.stringify(objectives);
+      this.generated_after = attempts;
       this.dialog = true;
     },
     copyGenerated() {
@@ -247,6 +314,17 @@ export default {
     }
   },
   mounted() {
+    // Load settings
+    const lsSettings = localStorage.getItem("generator_settings");
+    if (lsSettings) {
+      try {
+        this.settings = JSON.parse(lsSettings);
+      } catch {
+        // Nothing
+      }
+    }
+
+    // Load games
     this.items = [];
     let id = 0;
 
@@ -287,7 +365,8 @@ export default {
           group.options.forEach(option => {
             this.idToObjective[id] = {
               title: option.title,
-              category: group.group_name
+              group: group.group_name,
+              category: category.category_name
             };
 
             const option_o = {
