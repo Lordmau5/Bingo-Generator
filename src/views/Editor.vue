@@ -1,25 +1,56 @@
 <template>
   <div v-if="!editing">
-    <v-card class="mx-auto" max-width="400" outlined v-for="game in games" :key="game.game_name">
-      <v-list-item>
-        <v-list-item-content>
-          <v-card-title class="headline mb-1">
-            {{ game.game_name }}
-          </v-card-title>
-        </v-list-item-content>
+    <v-container>
+      <v-layout row wrap align-start justify-start>
+        <v-flex xs12 lg3 class="mb-2" v-for="game in games" :key="game.game_name">
+          <v-card class="mx-auto" max-width="400" outlined>
+            <v-card-title class="headline mb-1 d-inline-block">
+              {{ game.game_name }}
+            </v-card-title>
+            <v-avatar tile size="120px" class="float-right">
+              <v-img :src="game.icon"></v-img>
+            </v-avatar>
 
-        <v-list-item-avatar tile size="120">
-          <v-img :src="game.icon"></v-img>
-        </v-list-item-avatar>
-      </v-list-item>
+            <v-card-actions>
+              <v-btn text color="green" @click="editGame(game.game_name)">Edit</v-btn>
+              <v-spacer></v-spacer>
+              <v-btn text color="blue" @click="editGame(game.game_name)">
+                <v-icon left>mdi-download</v-icon> Export
+              </v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-flex>
+        <v-flex xs12 lg3 class="mb-2">
+          <v-card class="mx-auto" max-width="400" outlined>
+            <v-card-title class="headline mb-1 d-inline-block">
+              New Game (WIP)
+            </v-card-title>
+            <v-avatar tile size="120px" class="float-right">
+              <v-icon size="120">mdi-plus</v-icon>
+            </v-avatar>
 
-      <v-card-actions>
-        <v-btn text color="green" @click="editGame(game.game_name)">Edit</v-btn>
-      </v-card-actions>
-    </v-card>
+            <v-card-actions>
+              <v-btn text color="green" disabled>Edit</v-btn>
+              <v-spacer></v-spacer>
+              <v-btn text color="blue" disabled><v-icon left>mdi-upload</v-icon> Import</v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-flex>
+      </v-layout>
+    </v-container>
   </div>
   <div v-else>
     <v-row>
+      <v-col cols="12">
+        <div>
+          <span class="title">Game Name</span>
+        </div>
+        <v-text-field label="Game Name" v-model="input_game_name"></v-text-field>
+        <v-btn class="ma-2" color="green" :disabled="!is_different_name" @click="updateGameName"
+          >Update</v-btn
+        >
+      </v-col>
+
       <v-col cols="12">
         <div>
           <span class="title">Icon</span>
@@ -352,6 +383,7 @@ export default {
     edit_option: false,
 
     input_icon_url: "",
+    input_game_name: "",
 
     add_category: false,
     input_category: "",
@@ -370,6 +402,13 @@ export default {
       }
 
       return false;
+    },
+    is_different_name() {
+      if (!this.edit_game) {
+        return false;
+      }
+
+      return this.edit_game.game_name !== this.input_game_name.trim();
     }
   },
   methods: {
@@ -612,6 +651,7 @@ export default {
       const game = this.findGameByName(name);
       if (game) {
         this.input_icon_url = game.icon;
+        this.input_game_name = game.game_name;
       }
     },
 
@@ -623,6 +663,21 @@ export default {
       this.edit_game.icon = this.input_icon_url.trim();
 
       this.updateGames();
+    },
+
+    updateGameName() {
+      const name = this.input_game_name.trim();
+
+      if (this.findGameByName(name)) {
+        this.error_dialog = true;
+        this.error_message = "A game with that name already exists!";
+        return;
+      }
+      this.edit_game.game_name = name;
+
+      this.saveGamesList();
+      this.editing = false;
+      this.is_editing = false;
     }
   },
   created() {
