@@ -566,7 +566,7 @@ export default {
       this.games = [
         {
           game_name: "Yakuza 0",
-          icon: "yakuza0.png",
+          icon: "https://i.imgur.com/o5itGhm.png",
           categories: [
             {
               category_name: "Battle",
