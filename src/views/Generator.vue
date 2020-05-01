@@ -341,50 +341,64 @@ export default {
       lsGames = games;
     }
 
+    let hasOneOption = false;
+
     lsGames.forEach(game => {
+      hasOneOption = false;
+
       const game_o = {
         id: id++,
         name: game.game_name,
         children: []
       };
 
-      game.categories.forEach(category => {
-        const category_o = {
-          id: id++,
-          name: category.category_name,
-          children: []
-        };
-
-        category.groups.forEach(group => {
-          const group_o = {
+      if (game.categories) {
+        game.categories.forEach(category => {
+          const category_o = {
             id: id++,
-            name: group.group_name,
+            name: category.category_name,
             children: []
           };
 
-          group.options.forEach(option => {
-            this.idToObjective[id] = {
-              title: option.title,
-              group: group.group_name,
-              category: category.category_name
-            };
+          if (category.groups) {
+            category.groups.forEach(group => {
+              const group_o = {
+                id: id++,
+                name: group.group_name,
+                children: []
+              };
 
-            const option_o = {
-              id: id++,
-              name: option.title,
-              difficulty: option.difficulty
-            };
+              if (group.options) {
+                group.options.forEach(option => {
+                  hasOneOption = true;
 
-            group_o.children.push(option_o);
-          });
+                  this.idToObjective[id] = {
+                    title: option.title,
+                    group: group.group_name,
+                    category: category.category_name
+                  };
 
-          category_o.children.push(group_o);
+                  const option_o = {
+                    id: id++,
+                    name: option.title,
+                    difficulty: option.difficulty
+                  };
+
+                  group_o.children.push(option_o);
+                });
+              }
+
+              category_o.children.push(group_o);
+            });
+          }
+
+          game_o.children.push(category_o);
         });
+      }
 
-        game_o.children.push(category_o);
-      });
-
-      this.items.push(game_o);
+      if (hasOneOption) {
+        this.items.push(game_o);
+      }
     });
   }
 };

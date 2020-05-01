@@ -1,343 +1,135 @@
 <template>
-  <div v-if="!editing">
+  <div>
     <v-container>
       <v-layout row wrap align-start justify-start>
-        <v-flex xs12 lg3 class="mb-2" v-for="game in games" :key="game.game_name">
-          <v-card class="mx-auto" max-width="400" outlined>
-            <v-card-title class="headline mb-1 d-inline-block">
-              {{ game.game_name }}
-            </v-card-title>
-            <v-avatar tile size="120px" class="float-right">
-              <v-img :src="game.icon"></v-img>
-            </v-avatar>
+        <v-flex xs12 class="mb-6">
+          <v-card max-width="400" outlined>
+            <v-list-item three-line>
+              <v-list-item-content>
+                <v-list-item-title class="headline mb-1">New Game</v-list-item-title>
+                <v-list-item-subtitle>Add a new game</v-list-item-subtitle>
+              </v-list-item-content>
+
+              <v-list-item-avatar tile size="80">
+                <v-icon size="80">mdi-plus</v-icon>
+              </v-list-item-avatar>
+            </v-list-item>
 
             <v-card-actions>
-              <v-btn text color="green" @click="editGame(game.game_name)">Edit</v-btn>
+              <v-btn text color="green" @click="new_game_dialog = true">Add</v-btn>
               <v-spacer></v-spacer>
-              <v-btn text color="blue" @click="editGame(game.game_name)">
+              <v-btn text color="blue" @click="importGame">
+                <v-icon left>mdi-upload</v-icon> Import
+              </v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-flex>
+        <v-flex xs12 lg3 class="mb-2" v-for="(game, index) in games" :key="game.game_name">
+          <v-card max-width="400" outlined>
+            <v-list-item three-line>
+              <v-list-item-content>
+                <v-list-item-title class="headline mb-1">{{ game.game_name }}</v-list-item-title>
+                <v-list-item-subtitle>{{ game.game_name }}</v-list-item-subtitle>
+              </v-list-item-content>
+
+              <v-list-item-avatar tile size="80">
+                <v-img :src="game.icon"></v-img>
+              </v-list-item-avatar>
+            </v-list-item>
+
+            <v-card-actions>
+              <v-tooltip top>
+                <template v-slot:activator="{ on }">
+                  <v-btn v-on="on" icon tile color="green" @click="editGame(index)">
+                    <v-icon>mdi-pencil</v-icon>
+                  </v-btn>
+                </template>
+                <span>Edit</span>
+              </v-tooltip>
+              <v-tooltip top>
+                <template v-slot:activator="{ on }">
+                  <v-btn v-on="on" icon tile color="red" @click="deleteGameDialog(index)">
+                    <v-icon>mdi-trash-can</v-icon>
+                  </v-btn>
+                </template>
+                <span>Delete</span>
+              </v-tooltip>
+              <v-spacer></v-spacer>
+              <v-btn text color="blue" @click="exportGame(index)">
                 <v-icon left>mdi-download</v-icon> Export
               </v-btn>
             </v-card-actions>
           </v-card>
         </v-flex>
-        <v-flex xs12 lg3 class="mb-2">
-          <v-card class="mx-auto" max-width="400" outlined>
-            <v-card-title class="headline mb-1 d-inline-block">
-              New Game (WIP)
-            </v-card-title>
-            <v-avatar tile size="120px" class="float-right">
-              <v-icon size="120">mdi-plus</v-icon>
-            </v-avatar>
-
-            <v-card-actions>
-              <v-btn text color="green" disabled>Edit</v-btn>
-              <v-spacer></v-spacer>
-              <v-btn text color="blue" disabled><v-icon left>mdi-upload</v-icon> Import</v-btn>
-            </v-card-actions>
-          </v-card>
-        </v-flex>
       </v-layout>
     </v-container>
-  </div>
-  <div v-else>
-    <v-row>
-      <v-col cols="12">
-        <div>
-          <span class="title">Game Name</span>
-        </div>
-        <v-text-field label="Game Name" v-model="input_game_name"></v-text-field>
-        <v-btn class="ma-2" color="green" :disabled="!is_different_name" @click="updateGameName"
-          >Update</v-btn
-        >
-      </v-col>
 
-      <v-col cols="12">
-        <div>
-          <span class="title">Icon</span>
-        </div>
-        <v-list-item-avatar tile size="120">
-          <v-img :src="edit_game.icon"></v-img>
-        </v-list-item-avatar>
-        <v-text-field label="Icon URL" v-model="input_icon_url"></v-text-field>
-        <v-btn class="ma-2" color="green" @click="updateIconURL">Update</v-btn>
-      </v-col>
-
-      <v-col cols="12">
-        <div v-show="!add_category && !edit_category">
-          <v-select
-            :label="`Categories (${edit_game.categories.length})`"
-            :items="edit_game.categories"
-            item-text="category_name"
-            @input="setCategory"
-            :disabled="is_adding || is_editing"
-          >
-          </v-select>
-          <v-btn
-            class="ma-2"
-            color="green"
-            @click="
-              add_category = true;
-              is_adding = true;
-            "
-            :disabled="is_adding || is_editing"
-          >
-            Add
-          </v-btn>
-          <v-btn
-            class="ma-2"
-            color="orange"
-            @click="
-              edit_category = true;
-              is_editing = true;
-              input_category = current_category.category_name;
-            "
-            :disabled="!current_category || is_adding || is_editing"
-          >
-            Edit
-          </v-btn>
-          <v-btn
-            class="ma-2"
-            color="red"
-            @click="openDeleteDialog(1)"
-            :disabled="!current_category || is_adding || is_editing"
-          >
-            Remove
-          </v-btn>
-        </div>
-
-        <div v-show="add_category">
-          <v-text-field label="Category Name" v-model="input_category"></v-text-field>
-          <v-btn class="ma-2" color="green" @click="addCategory">Edit</v-btn>
-          <v-btn
-            class="ma-2"
-            color="red"
-            @click="
-              add_category = false;
-              is_adding = false;
-            "
-          >
-            Cancel
-          </v-btn>
-        </div>
-
-        <div v-show="edit_category && current_category">
-          <v-text-field label="Category Name" v-model="input_category"></v-text-field>
-          <v-btn class="ma-2" color="green" @click="editCategory">Edit</v-btn>
-          <v-btn
-            class="ma-2"
-            color="red"
-            @click="
-              edit_category = false;
-              is_editing = false;
-            "
-          >
-            Cancel
-          </v-btn>
-        </div>
-      </v-col>
-
-      <v-col cols="12">
-        <div v-show="!add_group && !edit_group">
-          <v-select
-            :label="current_category ? `Groups (${current_category.groups.length})` : 'Groups'"
-            :items="current_category ? current_category.groups : []"
-            item-text="group_name"
-            @input="setGroup"
-            :disabled="!current_category || is_adding || is_editing"
-          >
-          </v-select>
-          <v-btn
-            class="ma-2"
-            color="green"
-            @click="
-              add_group = true;
-              is_adding = true;
-            "
-            :disabled="!current_category || is_adding || is_editing"
-          >
-            Add
-          </v-btn>
-          <v-btn
-            class="ma-2"
-            color="orange"
-            @click="
-              edit_group = true;
-              is_editing = true;
-              input_group = current_group.group_name;
-            "
-            :disabled="!current_group || is_adding || is_editing"
-          >
-            Edit
-          </v-btn>
-          <v-btn
-            class="ma-2"
-            color="red"
-            @click="openDeleteDialog(2)"
-            :disabled="!current_group || is_adding || is_editing"
-          >
-            Remove
-          </v-btn>
-        </div>
-
-        <div v-show="add_group && current_category">
-          <v-text-field label="Group Name" v-model="input_group"></v-text-field>
-          <v-btn class="ma-2" color="green" @click="addGroup">Add</v-btn>
-          <v-btn
-            class="ma-2"
-            color="red"
-            @click="
-              add_group = false;
-              is_adding = false;
-            "
-          >
-            Cancel
-          </v-btn>
-        </div>
-
-        <div v-show="edit_group && current_group">
-          <v-text-field label="Group Name" v-model="input_group"></v-text-field>
-          <v-btn class="ma-2" color="green" @click="editGroup">Edit</v-btn>
-          <v-btn
-            class="ma-2"
-            color="red"
-            @click="
-              edit_group = false;
-              is_editing = false;
-            "
-          >
-            Cancel
-          </v-btn>
-        </div>
-      </v-col>
-
-      <v-col cols="12">
-        <div v-show="!add_option && !edit_option">
-          <v-select
-            :label="current_group ? `Options (${current_group.options.length})` : 'Options'"
-            :items="current_group ? current_group.options : []"
-            :item-text="item => `(${item.difficulty}) ${item.title}`"
-            item-value="title"
-            @input="setOption"
-            :disabled="!current_group || is_adding || is_editing"
-          >
-            <template v-slot:item="{ item }">
-              <v-chip class="mr-2" small :color="getDifficultyColor(item.difficulty)">
-                <span>{{ item.difficulty }}</span>
-              </v-chip>
-              <span>{{ item.title }}</span>
-            </template>
-            <template v-slot:selection="{ item }">
-              <v-chip class="mr-2" small :color="getDifficultyColor(item.difficulty)">
-                <span>{{ item.difficulty }}</span>
-              </v-chip>
-              <span>{{ item.title }}</span>
-            </template>
-          </v-select>
-          <v-btn
-            class="ma-2"
-            color="green"
-            @click="
-              add_option = true;
-              is_adding = true;
-            "
-            :disabled="!current_group || is_adding || is_editing"
-          >
-            Add
-          </v-btn>
-          <v-btn
-            class="ma-2"
-            color="orange"
-            @click="
-              edit_option = true;
-              is_editing = true;
-              input_option = current_option.title;
-              input_option_difficulty = current_option.difficulty;
-            "
-            :disabled="!current_option || is_adding || is_editing"
-          >
-            Edit
-          </v-btn>
-          <v-btn
-            class="ma-2"
-            color="red"
-            @click="openDeleteDialog(3)"
-            :disabled="!current_option || is_adding || is_editing"
-          >
-            Remove
-          </v-btn>
-        </div>
-
-        <div v-show="add_option && current_group">
-          <v-row>
-            <v-col cols="6">
-              <v-text-field label="Option Name" v-model="input_option"></v-text-field>
-            </v-col>
-            <v-col cols="6">
-              <v-select
-                label="Difficulty"
-                :items="['Easy', 'Normal', 'Hard']"
-                v-model="input_option_difficulty"
-              ></v-select>
-            </v-col>
-          </v-row>
-          <v-btn class="ma-2" color="green" @click="addOption">Add</v-btn>
-          <v-btn
-            class="ma-2"
-            color="red"
-            @click="
-              add_option = false;
-              is_adding = false;
-            "
-          >
-            Cancel
-          </v-btn>
-        </div>
-
-        <div v-show="edit_option && current_option">
-          <v-row>
-            <v-col cols="6">
-              <v-text-field label="Option Name" v-model="input_option"></v-text-field>
-            </v-col>
-            <v-col cols="6">
-              <v-select
-                label="Difficulty"
-                :items="['Easy', 'Normal', 'Hard']"
-                v-model="input_option_difficulty"
-              ></v-select>
-            </v-col>
-          </v-row>
-          <v-btn class="ma-2" color="green" @click="editOption">Edit</v-btn>
-          <v-btn
-            class="ma-2"
-            color="red"
-            @click="
-              edit_option = false;
-              is_editing = false;
-            "
-          >
-            Cancel
-          </v-btn>
-        </div>
-      </v-col>
-    </v-row>
-
-    <v-dialog v-model="delete_dialog" max-width="290">
+    <v-dialog v-model="new_game_dialog" width="500">
       <v-card>
-        <v-card-title class="headline">Do you really want to delete this?</v-card-title>
+        <v-card-title class="headline" primary-title>
+          Add New Game
+        </v-card-title>
 
         <v-card-text>
-          Deletion is irreversible. Once it's gone, it's gone.
+          <v-text-field label="Game Name" v-model="new_game_name"></v-text-field>
         </v-card-text>
+
+        <v-divider></v-divider>
+
+        <v-card-actions>
+          <v-btn color="green" text :disabled="!is_valid_game_name" @click="addGame()">
+            Add
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="delete_game_dialog" width="500">
+      <v-card>
+        <v-card-title class="headline" primary-title>
+          Delete {{ delete_game && delete_game.game_name }}?
+        </v-card-title>
+
+        <v-card-text>
+          Are you sure you want to delete {{ delete_game && delete_game.game_name }} forever?<br />
+          <strong>This action is irreversible.</strong>
+        </v-card-text>
+
+        <v-divider></v-divider>
+
+        <v-card-actions>
+          <v-btn color="blue" text @click="delete_game_dialog = false">
+            Cancel
+          </v-btn>
+          <v-spacer></v-spacer>
+          <v-btn color="red" text @click="deleteGame()">
+            Delete
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="override_dialog" max-width="500">
+      <v-card>
+        <v-card-title class="headline" primary-title>
+          Override {{ override_game && override_game.game_name }}?
+        </v-card-title>
+
+        <v-card-text>
+          Are you sure you want to override {{ override_game && override_game.game_name }}?<br />
+          <strong>This action is irreversible.</strong>
+        </v-card-text>
+
+        <v-divider></v-divider>
 
         <v-card-actions>
           <v-spacer></v-spacer>
 
-          <v-btn color="green darken-1" text @click="delete_dialog = false">
-            Disagree
+          <v-btn color="red" text @click="override_dialog = false">
+            No
           </v-btn>
-
-          <v-btn color="green darken-1" text @click="handleDeleteDialog">
-            Agree
+          <v-btn color="green" text @click="overrideGame()">
+            Yes
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -349,258 +141,62 @@
         <v-card-text>
           <v-img src="@/assets/no.gif"></v-img>
         </v-card-text>
+
+        <v-divider></v-divider>
+
         <v-card-actions>
           <v-spacer></v-spacer>
 
-          <v-btn color="green darken-1" text @click="error_dialog = false">
+          <v-btn color="green" text @click="error_dialog = false">
             Okay
           </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <v-file-input
+      id="file-input"
+      accept="application/json"
+      label="Import"
+      style="display: none;"
+      @change="onImportGame"
+    ></v-file-input>
   </div>
 </template>
 
 <script>
+import _ from "lodash";
+
 export default {
   data: () => ({
     games: [],
+    new_game_dialog: false,
+    delete_game_dialog: false,
 
-    delete_dialog: false,
-    delete_choice: 0,
+    override_dialog: false,
+    override_game: false,
 
     error_dialog: false,
     error_message: "",
 
-    editing: false,
-    current_category: false,
-    current_group: false,
-    current_option: false,
-
-    is_editing: false,
-    edit_category: false,
-    edit_group: false,
-    edit_option: false,
-
-    input_icon_url: "",
-    input_game_name: "",
-
-    add_category: false,
-    input_category: "",
-    add_group: false,
-    input_group: "",
-    add_option: false,
-    input_option: "",
-    input_option_difficulty: "Easy",
-    is_adding: false
+    new_game_name: "",
+    delete_game_id: -1
   }),
   computed: {
-    edit_game() {
-      if (this.editing) {
-        const game = this.findGameByName(this.editing);
-        return game;
+    is_valid_game_name() {
+      return (
+        this.new_game_name.toLowerCase().trim() !== "" && !this.findGameByName(this.new_game_name)
+      );
+    },
+    delete_game() {
+      if (this.delete_game_id > -1 && this.delete_game_id < this.games.length) {
+        return this.games[this.delete_game_id];
       }
 
       return false;
-    },
-    is_different_name() {
-      if (!this.edit_game) {
-        return false;
-      }
-
-      return this.edit_game.game_name !== this.input_game_name.trim();
     }
   },
   methods: {
-    updateGames() {
-      this.games[this.games.indexOf(this.edit_game)] = this.edit_game;
-
-      this.saveGamesList();
-    },
-
-    addCategory() {
-      if (
-        this.input_category === "" ||
-        this.edit_game.categories.some(
-          c => c.category_name.toLowerCase() === this.input_category.toLowerCase()
-        )
-      ) {
-        return;
-      }
-
-      this.edit_game.categories.push({
-        category_name: this.input_category,
-        groups: []
-      });
-
-      this.add_category = false;
-      this.is_adding = false;
-
-      this.updateGames();
-    },
-    editCategory() {
-      if (
-        this.current_category.category_name !== this.input_category &&
-        (this.input_category === "" ||
-          this.edit_game.categories.some(
-            c => c.category_name.toLowerCase() === this.input_category.toLowerCase()
-          ))
-      ) {
-        this.error_dialog = true;
-        this.error_message = "A category with that name already exists!";
-        return;
-      }
-      this.current_category.category_name = this.input_category;
-
-      this.edit_category = false;
-      this.is_editing = false;
-
-      this.updateGames();
-    },
-
-    addGroup() {
-      if (
-        this.input_group === "" ||
-        this.current_category.groups.some(
-          g => g.group_name.toLowerCase() === this.input_group.toLowerCase()
-        )
-      ) {
-        return;
-      }
-
-      this.current_category.groups.push({
-        group_name: this.input_group,
-        options: []
-      });
-
-      this.add_group = false;
-      this.is_adding = false;
-
-      this.updateGames();
-    },
-    editGroup() {
-      if (
-        this.current_group.group_name !== this.input_group &&
-        (this.input_group === "" ||
-          this.current_category.groups.some(
-            g => g.group_name.toLowerCase() === this.input_group.toLowerCase()
-          ))
-      ) {
-        return;
-      }
-      this.current_group.group_name = this.input_group;
-
-      this.edit_group = false;
-      this.is_editing = false;
-
-      this.updateGames();
-    },
-
-    addOption() {
-      if (
-        this.input_option === "" ||
-        this.current_group.options.some(
-          o => o.title.toLowerCase() === this.input_option.toLowerCase()
-        ) ||
-        !["Easy", "Normal", "Hard"].includes(this.input_option_difficulty)
-      ) {
-        return;
-      }
-
-      this.current_group.options.push({
-        title: this.input_option,
-        difficulty: this.input_option_difficulty
-      });
-
-      this.add_option = false;
-      this.is_adding = false;
-
-      this.updateGames();
-    },
-    editOption() {
-      if (
-        this.current_option.title !== this.input_option &&
-        (this.input_option === "" ||
-          this.current_group.options.some(
-            o => o.title.toLowerCase() === this.input_option.toLowerCase()
-          ))
-      ) {
-        return;
-      }
-      this.current_option.title = this.input_option;
-      this.current_option.difficulty = this.input_option_difficulty;
-
-      this.edit_option = false;
-      this.is_editing = false;
-
-      this.updateGames();
-    },
-
-    setCategory(value) {
-      this.current_category = this.edit_game.categories.find(c => c.category_name === value);
-      this.current_group = false;
-      this.current_option = false;
-    },
-    setGroup(value) {
-      this.current_group = this.current_category.groups.find(g => g.group_name === value);
-      this.current_option = false;
-    },
-    setOption(value) {
-      this.current_option = this.current_group.options.find(o => o.title === value);
-    },
-
-    openDeleteDialog(choice) {
-      this.delete_choice = choice;
-      this.delete_dialog = true;
-    },
-    handleDeleteDialog() {
-      if (this.delete_choice === 1) {
-        this.deleteCategory();
-      } else if (this.delete_choice === 2) {
-        this.deleteGroup();
-      } else if (this.delete_choice === 3) {
-        this.deleteOption();
-      }
-
-      this.delete_dialog = false;
-    },
-
-    deleteCategory() {
-      this.edit_game.categories = this.edit_game.categories.filter(
-        c => c.category_name !== this.current_category.category_name
-      );
-      this.current_category = false;
-      this.current_group = false;
-      this.current_option = false;
-
-      this.updateGames();
-    },
-    deleteGroup() {
-      this.current_category.groups = this.current_category.groups.filter(
-        g => g.group_name !== this.current_group.group_name
-      );
-      this.current_group = false;
-      this.current_option = false;
-
-      this.updateGames();
-    },
-    deleteOption() {
-      this.current_group.options = this.current_group.options.filter(
-        o => o.title !== this.current_option.title
-      );
-      this.current_option = false;
-
-      this.updateGames();
-    },
-
-    getDifficultyColor(difficulty) {
-      if (difficulty === "Easy") return "green";
-      if (difficulty === "Normal") return "orange";
-      if (difficulty === "Hard") return "red";
-
-      return "grey";
-    },
-
     generateGamesList() {
       this.games = [
         {
@@ -645,43 +241,95 @@ export default {
       localStorage.setItem("games_list", JSON.stringify(this.games));
     },
 
-    editGame(name) {
-      this.editing = name;
+    editGame(id) {
+      this.$router.push({ name: "EditorGame", params: { id } });
+    },
 
-      const game = this.findGameByName(name);
-      if (game) {
-        this.input_icon_url = game.icon;
-        this.input_game_name = game.game_name;
+    deleteGameDialog(id) {
+      this.delete_game_id = id;
+      this.delete_game_dialog = true;
+    },
+
+    deleteGame() {
+      this.delete_game_dialog = false;
+      this.games.splice(this.delete_game_id, 1);
+      this.saveGamesList();
+    },
+
+    addGame() {
+      this.games.push({
+        game_name: this.new_game_name.trim(),
+        icon: ""
+      });
+
+      this.saveGamesList();
+
+      this.$router.push({ name: "EditorGame", params: { id: this.games.length - 1 } });
+    },
+
+    exportGame(id) {
+      const game = this.games[id];
+
+      const downloadLink = document.createElement("a");
+      const url = URL.createObjectURL(
+        new Blob([JSON.stringify(game)], { type: "application/json" })
+      );
+      downloadLink.href = url;
+      downloadLink.download = `${game.game_name}.json`;
+      downloadLink.click();
+    },
+
+    importGame() {
+      document.getElementById("file-input").click();
+    },
+    onImportGame(file) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        try {
+          const parsed = JSON.parse(e.currentTarget.result);
+
+          if (!parsed.game_name) {
+            this.error_dialog = true;
+            this.error_message = "The game to import is invalid.";
+            return;
+          }
+
+          if (this.findGameByName(parsed.game_name)) {
+            this.override_dialog = true;
+            this.override_game = parsed;
+            return;
+          }
+
+          this.games.push(parsed);
+          this.saveGamesList();
+        } catch (error) {
+          this.error_dialog = true;
+          this.error_message = "There was an error loading the JSON file.";
+        }
+      };
+      reader.readAsText(file, "application/json");
+    },
+
+    overrideGame() {
+      const index = _.findIndex(
+        this.games,
+        g => g.game_name.toLowerCase().trim() === this.override_game.game_name.toLowerCase().trim()
+      );
+
+      if (index === -1) {
+        this.override_dialog = false;
+        this.override_game = false;
+        return;
       }
+
+      this.games[index] = this.override_game;
+      this.override_dialog = false;
+      this.override_game = false;
     },
 
     findGameByName(name) {
-      return this.games.find(g => g.game_name === name);
-    },
-
-    updateIconURL() {
-      this.edit_game.icon = this.input_icon_url.trim();
-
-      this.updateGames();
-    },
-
-    updateGameName() {
-      const name = this.input_game_name.trim();
-
-      if (this.findGameByName(name)) {
-        this.error_dialog = true;
-        this.error_message = "A game with that name already exists!";
-        return;
-      }
-      this.edit_game.game_name = name;
-
-      this.saveGamesList();
-      this.editing = false;
-      this.is_editing = false;
+      return this.games.find(g => g.game_name.toLowerCase().trim() === name.toLowerCase().trim());
     }
-  },
-  created() {
-    this.$vuetify.theme.dark = true;
   },
   mounted() {
     this.loadGamesList();
