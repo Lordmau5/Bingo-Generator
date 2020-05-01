@@ -62,7 +62,7 @@
       <v-avatar class="mr-2">
         <v-img src="@/assets/yakuza_kiwami.png"></v-img>
       </v-avatar>
-      <v-toolbar-title>Yakuza Bingo</v-toolbar-title>
+      <v-toolbar-title>Bingo Generator</v-toolbar-title>
     </v-app-bar>
 
     <v-content>
