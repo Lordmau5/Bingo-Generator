@@ -24,6 +24,20 @@
         </v-col>
         <v-col cols="12" align-self="end">
           <v-list dense>
+            <v-subheader>Essential Links</v-subheader>
+            <v-list-item href="https://github.com/Lordmau5/Bingo-Generator" target="_blank">
+              <v-list-item-action>
+                <v-icon color="green">mdi-github</v-icon>
+              </v-list-item-action>
+              <v-list-item-content>
+                <v-list-item-title>
+                  GitHub
+                </v-list-item-title>
+              </v-list-item-content>
+            </v-list-item>
+          </v-list>
+          <v-list dense v-if="debug">
+            <v-subheader>Debug</v-subheader>
             <v-list-item link @click="reset_dialog = true">
               <v-list-item-action>
                 <v-icon>mdi-redo</v-icon>
@@ -114,10 +128,12 @@ import original_games from "./assets/games.json";
 export default {
   data: () => ({
     drawer: null,
+    debug: false,
     reset_dialog: false
   }),
   created() {
     this.$vuetify.theme.dark = true;
+    this.debug = localStorage.debug === "true";
   },
   methods: {
     resetGames() {
