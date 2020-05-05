@@ -330,6 +330,8 @@
 </template>
 
 <script>
+import _ from "lodash";
+
 export default {
   data: () => ({
     id: -1,
@@ -574,43 +576,28 @@ export default {
       return "grey";
     },
 
-    generateGamesList() {
-      this.games = [
-        {
-          game_name: "Yakuza 0",
-          icon: "https://i.imgur.com/o5itGhm.png",
-          categories: [
-            {
-              category_name: "Battle",
-              groups: [
-                {
-                  group_name: "Defeat enemies on the street",
-                  options: [
-                    {
-                      title: "Defeat 50 enemies on the street",
-                      difficulty: "Easy"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
+    async loadGamesList() {
+      // Load from Server
+      const games_request = await fetch("/games.json");
+      if (games_request) {
+        const games_json = await games_request.json();
+
+        this.loading_games = games_json;
+
+        for (let i = 0; i < games_json.length; i++) {
+          this.games.push({ game_name: games_json[i] });
         }
-      ];
-
-      this.saveGamesList();
-    },
-
-    loadGamesList() {
-      const games_list = localStorage.getItem("games_list");
-      if (!games_list) {
-        this.generateGamesList();
-      } else {
-        this.games = JSON.parse(games_list);
       }
 
-      if (this.games.length === 0 || !this.games[0].game_name || !this.games[0].categories) {
-        this.generateGamesList();
+      const games_list = localStorage.getItem("games_list");
+      if (!games_list) {
+        localStorage.setItem("games_list", JSON.stringify([]));
+      } else {
+        const games = _.filter(
+          JSON.parse(games_list),
+          g => !_.some(this.games, _g => g.game_name.toLowerCase() === _g.game_name.toLowerCase())
+        );
+        _.forEach(games, g => this.games.push(g));
       }
     },
 
@@ -641,12 +628,18 @@ export default {
       this.updateGames();
     }
   },
-  mounted() {
-    this.loadGamesList();
+  async mounted() {
+    await this.loadGamesList();
 
-    this.id = this.$route.params.id;
-    if (this.id > -1 && this.id < this.games.length) {
-      this.edit_game = this.games[this.id];
+    this.edit_game = _.find(
+      this.games,
+      g => g.game_name.toLowerCase() === this.$route.params.id.toLowerCase()
+    );
+    if (this.edit_game) {
+      this.id = _.findIndex(
+        this.games,
+        g => g.game_name.toLowerCase() === this.$route.params.id.toLowerCase()
+      );
 
       this.input_game_name = this.edit_game.game_name;
       this.input_icon_url = this.edit_game.icon;

@@ -100,6 +100,7 @@
           shaped
           rounded
           open-on-click
+          item-disabled="loading"
           @input="onTreeviewUpdate"
         >
           <template v-slot:label="{ item }">
@@ -157,11 +158,10 @@
 import _ from "lodash";
 import clipboard from "copy-to-clipboard";
 
-import games from "../assets/games.json";
-
 export default {
   data: () => ({
     items: [],
+    lastID: 0,
     idToObjective: {},
     enabled: [],
     search: "",
@@ -311,43 +311,24 @@ export default {
     },
     onCheckboxHard() {
       this.enableDisableDifficulty("Hard", this.checkbox_hard);
-    }
-  },
-  mounted() {
-    // Load settings
-    const lsSettings = localStorage.getItem("generator_settings");
-    if (lsSettings) {
-      try {
-        this.settings = JSON.parse(lsSettings);
-      } catch {
-        // Nothing
+    },
+
+    addGame(game) {
+      let hasOneOption = false;
+
+      const foundGame = _.find(
+        this.items,
+        g => g && g.name && g.name.toLowerCase() === game.game_name.toLowerCase()
+      );
+      if (foundGame) {
+        if (!foundGame.loading) {
+          return;
+        }
+        this.items = _.filter(this.items, g => g !== foundGame);
       }
-    }
-
-    // Load games
-    this.items = [];
-    let id = 0;
-
-    let lsGames = localStorage.getItem("games_list");
-    if (lsGames) {
-      try {
-        lsGames = JSON.parse(lsGames);
-      } catch {
-        lsGames = false;
-      }
-    }
-
-    if (!lsGames) {
-      lsGames = games;
-    }
-
-    let hasOneOption = false;
-
-    lsGames.forEach(game => {
-      hasOneOption = false;
 
       const game_o = {
-        id: id++,
+        id: this.lastID++,
         name: game.game_name,
         children: []
       };
@@ -355,7 +336,7 @@ export default {
       if (game.categories) {
         game.categories.forEach(category => {
           const category_o = {
-            id: id++,
+            id: this.lastID++,
             name: category.category_name,
             children: []
           };
@@ -363,7 +344,7 @@ export default {
           if (category.groups) {
             category.groups.forEach(group => {
               const group_o = {
-                id: id++,
+                id: this.lastID++,
                 name: group.group_name,
                 children: []
               };
@@ -372,14 +353,14 @@ export default {
                 group.options.forEach(option => {
                   hasOneOption = true;
 
-                  this.idToObjective[id] = {
+                  this.idToObjective[this.lastID] = {
                     title: option.title,
                     group: group.group_name,
                     category: category.category_name
                   };
 
                   const option_o = {
-                    id: id++,
+                    id: this.lastID++,
                     name: option.title,
                     difficulty: option.difficulty
                   };
@@ -399,6 +380,54 @@ export default {
       if (hasOneOption) {
         this.items.push(game_o);
       }
+    }
+  },
+  async mounted() {
+    // Load settings
+    const lsSettings = localStorage.getItem("generator_settings");
+    if (lsSettings) {
+      try {
+        this.settings = JSON.parse(lsSettings);
+      } catch {
+        // Nothing
+      }
+    }
+
+    this.items = [];
+
+    // Load games from server
+    const games_request = await fetch("/games.json");
+    if (games_request) {
+      const games_json = await games_request.json();
+
+      const requests = [];
+      for (let i = 0; i < games_json.length; i++) {
+        requests.push(fetch(`/games/${games_json[i]}.json`).then(b => b.json()));
+        this.items.push({ loading: true, name: games_json[i] });
+      }
+
+      const games = await Promise.all(requests);
+      for (let i = 0; i < games.length; i++) {
+        this.addGame(games[i]);
+      }
+    }
+
+    // Load games
+    let lsGames = localStorage.getItem("games_list");
+    if (lsGames) {
+      try {
+        lsGames = JSON.parse(lsGames);
+      } catch {
+        lsGames = false;
+      }
+    }
+
+    if (!lsGames) {
+      return;
+    }
+
+    lsGames.forEach(game => {
+      this.addGame(game);
     });
   }
 };

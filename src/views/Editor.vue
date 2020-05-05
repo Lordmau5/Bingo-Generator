@@ -24,7 +24,32 @@
             </v-card-actions>
           </v-card>
         </v-flex>
-        <v-flex xs12 lg3 class="mb-2" v-for="(game, index) in games" :key="game.game_name">
+        <v-flex xs12 lg3 class="mb-2" v-for="game in loading_games" :key="game">
+          <v-card max-width="400" outlined>
+            <v-list-item three-line>
+              <v-list-item-content>
+                <v-list-item-title class="headline mb-1">{{ game }}</v-list-item-title>
+                <v-list-item-subtitle>{{ game }}</v-list-item-subtitle>
+              </v-list-item-content>
+
+              <v-list-item-avatar tile size="80">
+                <v-skeleton-loader type="image" width="80"></v-skeleton-loader>
+              </v-list-item-avatar>
+            </v-list-item>
+
+            <v-card-actions>
+              <v-tooltip top>
+                <template v-slot:activator="{ on }">
+                  <v-btn v-on="on" icon tile color="red">
+                    <v-icon>mdi-lock</v-icon>
+                  </v-btn>
+                </template>
+                <span>Locked</span>
+              </v-tooltip>
+            </v-card-actions>
+          </v-card>
+        </v-flex>
+        <v-flex xs12 lg3 class="mb-2" v-for="game in games" :key="game.game_name">
           <v-card max-width="400" outlined>
             <v-list-item three-line>
               <v-list-item-content>
@@ -38,26 +63,52 @@
             </v-list-item>
 
             <v-card-actions>
-              <v-tooltip top>
-                <template v-slot:activator="{ on }">
-                  <v-btn v-on="on" icon tile color="green" @click="editGame(index)">
-                    <v-icon>mdi-pencil</v-icon>
-                  </v-btn>
-                </template>
-                <span>Edit</span>
-              </v-tooltip>
-              <v-tooltip top>
-                <template v-slot:activator="{ on }">
-                  <v-btn v-on="on" icon tile color="red" @click="deleteGameDialog(index)">
-                    <v-icon>mdi-trash-can</v-icon>
-                  </v-btn>
-                </template>
-                <span>Delete</span>
-              </v-tooltip>
-              <v-spacer></v-spacer>
-              <v-btn text color="blue" @click="exportGame(index)">
-                <v-icon left>mdi-download</v-icon> Export
-              </v-btn>
+              <template v-if="game.locked">
+                <v-tooltip top>
+                  <template v-slot:activator="{ on }">
+                    <v-btn v-on="on" icon tile color="red" disabled>
+                      <v-icon>mdi-lock</v-icon>
+                    </v-btn>
+                  </template>
+                  <span>Locked</span>
+                </v-tooltip>
+              </template>
+              <template v-else>
+                <v-tooltip top>
+                  <template v-slot:activator="{ on }">
+                    <v-btn
+                      v-on="on"
+                      icon
+                      tile
+                      color="green"
+                      @click="editGame(game.game_name)"
+                      :disabled="game.locked"
+                    >
+                      <v-icon>mdi-pencil</v-icon>
+                    </v-btn>
+                  </template>
+                  <span>Edit</span>
+                </v-tooltip>
+                <v-tooltip top>
+                  <template v-slot:activator="{ on }">
+                    <v-btn
+                      v-on="on"
+                      icon
+                      tile
+                      color="red"
+                      @click="deleteGameDialog(game.game_name)"
+                      :disabled="game.locked"
+                    >
+                      <v-icon>mdi-trash-can</v-icon>
+                    </v-btn>
+                  </template>
+                  <span>Delete</span>
+                </v-tooltip>
+                <v-spacer></v-spacer>
+                <v-btn text color="blue" @click="exportGame(game.game_name)">
+                  <v-icon left>mdi-download</v-icon> Export
+                </v-btn>
+              </template>
             </v-card-actions>
           </v-card>
         </v-flex>
@@ -170,6 +221,7 @@ import _ from "lodash";
 export default {
   data: () => ({
     games: [],
+    loading_games: [],
     new_game_dialog: false,
     delete_game_dialog: false,
 
@@ -180,7 +232,7 @@ export default {
     error_message: "",
 
     new_game_name: "",
-    delete_game_id: -1
+    delete_game_name: ""
   }),
   computed: {
     is_valid_game_name() {
@@ -197,78 +249,76 @@ export default {
     }
   },
   methods: {
-    generateGamesList() {
-      this.games = [
-        {
-          game_name: "Yakuza 0",
-          icon: "https://i.imgur.com/o5itGhm.png",
-          categories: [
-            {
-              category_name: "Battle",
-              groups: [
-                {
-                  group_name: "Defeat enemies on the street",
-                  options: [
-                    {
-                      title: "Defeat 50 enemies on the street",
-                      difficulty: "Easy"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
+    async loadGamesList() {
+      // Load from Server
+      const games_request = await fetch("/games.json");
+      if (games_request) {
+        const games_json = await games_request.json();
+
+        this.loading_games = games_json;
+
+        const requests = [];
+        for (let i = 0; i < games_json.length; i++) {
+          requests.push(fetch(`/games/${games_json[i]}.json`).then(b => b.json()));
         }
-      ];
 
-      this.saveGamesList();
-    },
-
-    loadGamesList() {
-      const games_list = localStorage.getItem("games_list");
-      if (!games_list) {
-        this.generateGamesList();
-      } else {
-        this.games = JSON.parse(games_list);
+        const games = await Promise.all(requests);
+        for (let i = 0; i < games.length; i++) {
+          this.loading_games = _.filter(this.loading_games, e => e !== games[i].game_name);
+          this.games.push({ locked: true, ...games[i] });
+        }
       }
 
-      if (this.games.length === 0 || !this.games[0].game_name || !this.games[0].categories) {
-        this.generateGamesList();
+      const games_list = localStorage.getItem("games_list");
+      if (!games_list) {
+        localStorage.setItem("games_list", JSON.stringify([]));
+      } else {
+        const games = _.filter(
+          JSON.parse(games_list),
+          g => !_.some(this.games, _g => g.game_name.toLowerCase() === _g.game_name.toLowerCase())
+        );
+        _.forEach(games, g => this.games.push(g));
+        this.saveGamesList();
       }
     },
 
     saveGamesList() {
-      localStorage.setItem("games_list", JSON.stringify(this.games));
+      localStorage.setItem("games_list", JSON.stringify(_.filter(this.games, g => !g.locked)));
+      console.log(localStorage.getItem("games_list"));
     },
 
     editGame(id) {
       this.$router.push({ name: "EditorGame", params: { id } });
     },
 
-    deleteGameDialog(id) {
-      this.delete_game_id = id;
+    deleteGameDialog(name) {
+      this.delete_game_name = name;
       this.delete_game_dialog = true;
     },
 
     deleteGame() {
       this.delete_game_dialog = false;
-      this.games.splice(this.delete_game_id, 1);
+      this.games = _.filter(
+        this.games,
+        g => g.game_name.toLowerCase() !== this.delete_game_name.toLowerCase()
+      );
       this.saveGamesList();
     },
 
     addGame() {
+      const name = this.new_game_name.trim();
       this.games.push({
-        game_name: this.new_game_name.trim(),
+        game_name: name,
         icon: ""
       });
 
       this.saveGamesList();
 
-      this.$router.push({ name: "EditorGame", params: { id: this.games.length - 1 } });
+      this.$router.push({ name: "EditorGame", params: { id: name } });
     },
 
-    exportGame(id) {
-      const game = this.games[id];
+    exportGame(name) {
+      const game = _.find(this.games, g => g.game_name.toLowerCase() === name.toLowerCase());
 
       const downloadLink = document.createElement("a");
       const url = URL.createObjectURL(
@@ -294,7 +344,14 @@ export default {
             return;
           }
 
-          if (this.findGameByName(parsed.game_name)) {
+          const override_game = this.findGameByName(parsed.game_name);
+          if (override_game) {
+            if (override_game.locked) {
+              this.error_dialog = true;
+              this.error_message = "The game you are trying to override is locked.";
+              return;
+            }
+
             this.override_dialog = true;
             this.override_game = parsed;
             return;
