@@ -325,6 +325,8 @@ export default {
       this.games[index] = this.override_game;
       this.override_dialog = false;
       this.override_game = false;
+
+      this.saveGamesList();
     },
 
     findGameByName(name) {
