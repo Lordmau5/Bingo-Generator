@@ -35,6 +35,17 @@
                 </v-list-item-title>
               </v-list-item-content>
             </v-list-item>
+            <v-list-item href="https://bingosync.com/" target="_blank">
+              <v-list-item-action>
+                <v-img src="@/assets/bingosync.png" width="24"></v-img>
+                <!-- <v-icon color="green">mdi-github</v-icon> -->
+              </v-list-item-action>
+              <v-list-item-content>
+                <v-list-item-title>
+                  Bingosync
+                </v-list-item-title>
+              </v-list-item-content>
+            </v-list-item>
           </v-list>
           <v-list dense v-if="debug">
             <v-subheader>Debug</v-subheader>
