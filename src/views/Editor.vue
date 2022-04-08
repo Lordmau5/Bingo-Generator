@@ -166,6 +166,7 @@
 
 <script>
 import _ from "lodash";
+import original_games from "../assets/games.json";
 
 export default {
   data: () => ({
@@ -198,28 +199,7 @@ export default {
   },
   methods: {
     generateGamesList() {
-      this.games = [
-        {
-          game_name: "Yakuza 0",
-          icon: "https://i.imgur.com/o5itGhm.png",
-          categories: [
-            {
-              category_name: "Battle",
-              groups: [
-                {
-                  group_name: "Defeat enemies on the street",
-                  options: [
-                    {
-                      title: "Defeat 50 enemies on the street",
-                      difficulty: "Easy"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      ];
+      this.games = original_games;
 
       this.saveGamesList();
     },

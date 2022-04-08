@@ -25,14 +25,15 @@
         <v-col cols="12" align-self="end">
           <v-list dense>
             <v-subheader>Essential Links</v-subheader>
-            <v-list-item href="https://github.com/Lordmau5/Bingo-Generator" target="_blank">
+            <v-list-item
+              href="https://github.com/Lordmau5/Bingo-Generator"
+              target="_blank"
+            >
               <v-list-item-action>
                 <v-icon color="green">mdi-github</v-icon>
               </v-list-item-action>
               <v-list-item-content>
-                <v-list-item-title>
-                  GitHub
-                </v-list-item-title>
+                <v-list-item-title> GitHub </v-list-item-title>
               </v-list-item-content>
             </v-list-item>
             <v-list-item href="https://bingosync.com/" target="_blank">
@@ -41,9 +42,7 @@
                 <!-- <v-icon color="green">mdi-github</v-icon> -->
               </v-list-item-action>
               <v-list-item-content>
-                <v-list-item-title>
-                  Bingosync
-                </v-list-item-title>
+                <v-list-item-title> Bingosync </v-list-item-title>
               </v-list-item-content>
             </v-list-item>
           </v-list>
@@ -54,9 +53,7 @@
                 <v-icon>mdi-redo</v-icon>
               </v-list-item-action>
               <v-list-item-content>
-                <v-list-item-title>
-                  Reset
-                </v-list-item-title>
+                <v-list-item-title> Reset </v-list-item-title>
               </v-list-item-content>
             </v-list-item>
             <v-list-item link @click="importGames">
@@ -64,9 +61,7 @@
                 <v-icon>mdi-upload</v-icon>
               </v-list-item-action>
               <v-list-item-content>
-                <v-list-item-title>
-                  Import
-                </v-list-item-title>
+                <v-list-item-title> Import </v-list-item-title>
               </v-list-item-content>
             </v-list-item>
             <v-list-item link @click="exportGames">
@@ -100,8 +95,8 @@
       <v-card>
         <v-card-title>Reset Games In Editor</v-card-title>
         <v-card-text>
-          Do you really want to reset the games in the editor? This will make sure you are getting
-          the newest file from the server again.
+          Do you really want to reset the games in the editor? This will make
+          sure you are getting the newest file from the server again.
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
@@ -127,7 +122,7 @@
       id="file-input"
       accept="application/json"
       label="Import"
-      style="display: none;"
+      style="display: none"
       @change="onImportGames"
     ></v-file-input>
   </v-app>
@@ -140,11 +135,16 @@ export default {
   data: () => ({
     drawer: null,
     debug: false,
-    reset_dialog: false
+    reset_dialog: false,
   }),
   created() {
     this.$vuetify.theme.dark = true;
     this.debug = localStorage.debug === "true";
+
+    const games_list = localStorage.getItem("games_list");
+    if (!games_list) {
+      this.resetGames();
+    }
   },
   methods: {
     resetGames() {
@@ -153,7 +153,9 @@ export default {
     exportGames() {
       const downloadLink = document.createElement("a");
       const url = URL.createObjectURL(
-        new Blob([localStorage.getItem("games_list")], { type: "application/json" })
+        new Blob([localStorage.getItem("games_list")], {
+          type: "application/json",
+        })
       );
       downloadLink.href = url;
       downloadLink.download = "games.json";
@@ -164,13 +166,13 @@ export default {
     },
     onImportGames(file) {
       const reader = new FileReader();
-      reader.onload = e => {
+      reader.onload = (e) => {
         const parsed = JSON.parse(e.currentTarget.result);
         const stringified = JSON.stringify(parsed);
         localStorage.setItem("games_list", stringified);
       };
       reader.readAsText(file, "application/json");
-    }
-  }
+    },
+  },
 };
 </script>
